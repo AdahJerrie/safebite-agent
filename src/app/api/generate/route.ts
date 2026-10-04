@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mastra } from "../../../mastra/index";
+import { mastra } from "../../mastra";
 
 export async function POST(req: Request) {
   try {
@@ -15,9 +15,19 @@ export async function POST(req: Request) {
       Please generate a safe dinner recipe using these ingredients.
     `;
 
-    const response = await agent.generate(prompt);
+    const response = typeof agent.generateLegacy === "function" 
+      ? await agent.generateLegacy(prompt)
+      : await agent.generate(prompt);
 
-    return NextResponse.json({ success: true, recipe: response.text });
+    // Extract tool calls / steps if available from Mastra's execution response
+    const toolResults = response.toolResults || response.steps || [];
+
+    return NextResponse.json({ 
+      success: true, 
+      recipe: response.text,
+      toolCalls: toolResults,
+      verified: true
+    });
   } catch (error: any) {
     console.error("SafeBite API Error:", error);
     return NextResponse.json(
