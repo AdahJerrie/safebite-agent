@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mastra } from "../../mastra";
+import { mastra } from "../../../mastra/index";
 
 export async function POST(req: Request) {
   try {
