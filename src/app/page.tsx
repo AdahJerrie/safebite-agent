@@ -27,6 +27,8 @@ export default function SafeBiteDashboard() {
   const [maxTime, setMaxTime] = useState<number>(20);
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState<string | null>(null);
+  const [toolLogs, setToolLogs] = useState<any[]>([]);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
 
   const toggleAllergy = (allergyName: string) => {
     setAllergies((prev) =>
@@ -52,6 +54,8 @@ export default function SafeBiteDashboard() {
   const generateRecipe = async () => {
     setLoading(true);
     setRecipe(null);
+    setToolLogs([]);
+    setIsVerified(false);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -61,6 +65,8 @@ export default function SafeBiteDashboard() {
       const data = await res.json();
       if (data.success) {
         setRecipe(data.recipe);
+        setToolLogs(data.toolCalls || []);
+        setIsVerified(data.verified || false);
       } else {
         alert("Error generating recipe: " + data.error);
       }
@@ -215,7 +221,7 @@ export default function SafeBiteDashboard() {
             onClick={generateRecipe}
             disabled={loading || ingredients.length === 0}
             type="button"
-            className="w-full md:w-auto px-8 py-3.5 bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold rounded-xl shadow-lg transition duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+            className="w-full md:w-auto px-8 py-3.5 bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold rounded-xl shadow-lg transition duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
             {loading ? (
               <>
@@ -252,18 +258,42 @@ export default function SafeBiteDashboard() {
         {/* Recipe Display Section */}
         {recipe && (
           <div className="bg-slate-900/80 border border-emerald-500/30 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-xl font-bold text-emerald-300 flex items-center gap-2">
-                <span>🍽️</span> SafeBite Agent Output
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-xl font-bold text-emerald-300 flex items-center gap-2">
+                  <span>🍽️️</span> SafeBite Agent Output
+                </h3>
+                {isVerified && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-xs">
+                    <span>🛡️</span> Verified Safe by Mastra
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => navigator.clipboard.writeText(recipe)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700 self-start sm:self-auto cursor-pointer"
               >
                 📋 Copy Recipe
               </button>
             </div>
+
+            {/* Mastra Tool Execution Telemetry */}
+            <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 text-xs font-mono space-y-2">
+              <div className="text-slate-400 font-semibold flex items-center gap-2 border-b border-slate-800/60 pb-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span>Mastra Agent Execution Telemetry</span>
+              </div>
+              <div className="text-slate-300 space-y-1">
+                <p>⚡ <strong className="text-cyan-400">Agent:</strong> safeBiteAgent</p>
+                <p>🛠️ <strong className="text-cyan-400">Active Tool:</strong> allergenCheckerTool</p>
+                <p>🔒 <strong className="text-cyan-400">Screened Constraints:</strong> {allergies.length > 0 ? allergies.join(", ") : "None"}</p>
+                {toolLogs.length > 0 && (
+                  <p>📊 <strong className="text-cyan-400">Tool Calls Executed:</strong> {toolLogs.length}</p>
+                )}
+              </div>
+            </div>
+
             <div className="prose prose-invert max-w-none text-slate-300 prose-headings:text-slate-100 prose-emerald">
               <ReactMarkdown>{recipe}</ReactMarkdown>
             </div>
