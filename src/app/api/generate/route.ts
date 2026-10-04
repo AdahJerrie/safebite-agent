@@ -15,19 +15,9 @@ export async function POST(req: Request) {
       Please generate a safe dinner recipe using these ingredients.
     `;
 
-    const response = typeof agent.generateLegacy === "function" 
-      ? await agent.generateLegacy(prompt)
-      : await agent.generate(prompt);
+    const response = await agent.generate(prompt);
 
-    // Extract tool calls / steps if available from Mastra's execution response
-    const toolResults = response.toolResults || response.steps || [];
-
-    return NextResponse.json({ 
-      success: true, 
-      recipe: response.text,
-      toolCalls: toolResults,
-      verified: true
-    });
+    return NextResponse.json({ success: true, recipe: response.text });
   } catch (error: any) {
     console.error("SafeBite API Error:", error);
     return NextResponse.json(
